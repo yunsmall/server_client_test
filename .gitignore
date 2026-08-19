@@ -1,0 +1,20 @@
+# 构建产物
+build*/
+cmake-build-*/
+compile_commands.json
+
+# 压测日志（stress_test.sh 运行时生成）
+stress_*.log
+
+# 编译产物
+*.exe
+*.pdb
+*.o
+*.a
+*.lib
+a.out
+
+# 编辑器 / IDE
+.vscode/
+.idea/
+CMakeSettings.json
