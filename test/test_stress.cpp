@@ -95,6 +95,28 @@ TEST_F(ServerClientTest, ConnectThenImmediateDisconnect) {
     EXPECT_TRUE(wait_until([this] { return server_->active_connections() == 0; }, 10s));
 }
 
+// 客户端发送数据后立即断开（不发 QUIT）：服务端应处理残留缓冲与 EOF，
+// 正确移除连接，且不因写方向失败卡住收尾。
+TEST_F(ServerClientTest, DisconnectAfterSend) {
+    {
+        // 发送完整命令后立即断开：响应（PONG）可能来不及发出，写方向
+        // 失败应让会话正常收尾而不是卡死。
+        auto c = make_client();
+        ASSERT_NE(c, nullptr);
+        ASSERT_TRUE(c->send_line("PING"));
+    }  // 作用域结束即断开。
+
+    {
+        // 发送不带换行的半行数据后断开：服务端读到 EOF 时缓冲有残留，
+        // 应丢弃残留并移除连接。
+        auto c = make_client();
+        ASSERT_NE(c, nullptr);
+        ASSERT_TRUE(c->send_raw("PING"));
+    }
+
+    EXPECT_TRUE(wait_until([this] { return server_->active_connections() == 0; }, 10s));
+}
+
 // 连接后不发任何数据，服务端应保持连接，且不影响其他客户端。
 TEST_F(ServerClientTest, ConnectThenSilent) {
     auto silent = make_client();
